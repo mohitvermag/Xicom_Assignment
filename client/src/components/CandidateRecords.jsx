@@ -21,6 +21,24 @@ function formatAddress(address) {
   return addressParts.length ? addressParts.join(', ') : '-'
 }
 
+function getDocumentUrl(fileUrl) {
+  if (!fileUrl) {
+    return '#'
+  }
+
+  if (/^https?:\/\//i.test(fileUrl)) {
+    return fileUrl
+  }
+
+  const apiBaseUrl = import.meta.env.VITE_API_URL || ''
+
+  if (!apiBaseUrl) {
+    return fileUrl
+  }
+
+  return `${apiBaseUrl.replace(/\/$/, '')}${fileUrl}`
+}
+
 function CandidateRecords(props) {
   const { records, loading, error, onRefresh } = props
 
@@ -143,7 +161,7 @@ function CandidateRecords(props) {
                         </p>
                       </div>
                       <a
-                        href={document.fileUrl}
+                        href={getDocumentUrl(document.fileUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="font-medium text-gray-900 underline"

@@ -3,6 +3,46 @@ const Candidate = require('../models/Candidate');
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const getServerBaseUrl = (req) => {
+  if (process.env.SERVER_URL) {
+    return process.env.SERVER_URL.replace(/\/$/, '');
+  }
+
+  const forwardedProtocol = req.headers['x-forwarded-proto'];
+  const protocol = forwardedProtocol
+    ? forwardedProtocol.split(',')[0]
+    : req.protocol;
+
+  return `${protocol}://${req.get('host')}`;
+};
+
+const getAbsoluteFileUrl = (fileUrl, req) => {
+  if (!fileUrl) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(fileUrl)) {
+    return fileUrl;
+  }
+
+  return `${getServerBaseUrl(req)}${fileUrl}`;
+};
+
+const formatCandidateResponse = (candidate, req) => {
+  const candidateData =
+    typeof candidate.toObject === 'function' ? candidate.toObject() : candidate;
+
+  return {
+    ...candidateData,
+    documents: Array.isArray(candidateData.documents)
+      ? candidateData.documents.map((document) => ({
+          ...document,
+          fileUrl: getAbsoluteFileUrl(document.fileUrl, req),
+        }))
+      : [],
+  };
+};
+
 const removeUploadedFiles = (files) => {
   if (!files || !files.length) {
     return;
@@ -305,7 +345,7 @@ const createCandidate = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Candidate submitted successfully',
-      data: savedCandidate,
+      data: formatCandidateResponse(savedCandidate, req),
     });
   } catch (error) {
     removeUploadedFiles(uploadedFiles);
@@ -323,7 +363,7 @@ const getCandidates = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Candidates fetched successfully',
-      data: candidates,
+      data: candidates.map((candidate) => formatCandidateResponse(candidate, req)),
     });
   } catch (error) {
     return res.status(500).json({
