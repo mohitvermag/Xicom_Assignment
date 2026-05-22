@@ -1,11 +1,7 @@
+import CandidateForm from './pages/CandidateForm'
+
 function App() {
-  return (
-    <>
-      <div>
-        <h1>Home Page</h1>
-      </div>
-    </>
-  )
+  return <CandidateForm />
 }
 
 export default App
