@@ -1,7 +1,8 @@
 import FormInput from './FormInput'
 
 function AddressSection(props) {
-  const { title, prefix, register, errors, disabled = false } = props
+  const { title, prefix, register, errors, disabled = false, required = true } =
+    props
 
   return (
     <section className="rounded-lg border border-gray-200 p-4 sm:p-5">
@@ -13,6 +14,7 @@ function AddressSection(props) {
           placeholder="Enter street address"
           register={register}
           error={errors?.street1?.message}
+          required={required}
           disabled={disabled}
         />
         <FormInput
@@ -21,6 +23,7 @@ function AddressSection(props) {
           placeholder="Apartment, suite, area"
           register={register}
           error={errors?.street2?.message}
+          required={required}
           disabled={disabled}
         />
       </div>

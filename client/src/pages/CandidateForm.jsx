@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useWatch } from 'react-hook-form'
 import AddressSection from '../components/AddressSection'
+import CandidateRecords from '../components/CandidateRecords'
 import DocumentUploadSection from '../components/DocumentUploadSection'
 import FormInput from '../components/FormInput'
 import SubmitButton from '../components/SubmitButton'
@@ -25,6 +26,11 @@ const defaultFormValues = {
     {
       fileName: '',
       fileType: 'image',
+      file: null,
+    },
+    {
+      fileName: '',
+      fileType: 'pdf',
       file: null,
     },
   ],
@@ -82,6 +88,11 @@ function CandidateForm() {
   const [isSubmittingForm, setIsSubmittingForm] = useState(false)
   const [submitMessage, setSubmitMessage] = useState('')
   const [submitError, setSubmitError] = useState('')
+  const [showRecords, setShowRecords] = useState(false)
+  const [records, setRecords] = useState([])
+  const [isLoadingRecords, setIsLoadingRecords] = useState(false)
+  const [recordsError, setRecordsError] = useState('')
+  const [hasFetchedRecords, setHasFetchedRecords] = useState(false)
 
   const form = useForm({
     resolver: zodResolver(candidateSchema),
@@ -123,6 +134,39 @@ function CandidateForm() {
     clearErrors,
   ])
 
+  const loadCandidateRecords = async () => {
+    setIsLoadingRecords(true)
+    setRecordsError('')
+
+    try {
+      const response = await fetch('/api/candidates')
+      const result = await response.json()
+
+      if (!response.ok) {
+        setRecordsError(
+          result.message || 'Unable to fetch submitted records right now.',
+        )
+        return
+      }
+
+      setRecords(Array.isArray(result.data) ? result.data : [])
+      setHasFetchedRecords(true)
+    } catch {
+      setRecordsError('Unable to fetch submitted records right now.')
+    } finally {
+      setIsLoadingRecords(false)
+    }
+  }
+
+  const handleToggleRecords = async () => {
+    const nextValue = !showRecords
+    setShowRecords(nextValue)
+
+    if (nextValue && !hasFetchedRecords) {
+      await loadCandidateRecords()
+    }
+  }
+
   const onSubmit = async (data) => {
     setIsSubmittingForm(true)
     setSubmitMessage('')
@@ -143,6 +187,12 @@ function CandidateForm() {
 
       setSubmitMessage(result.message || 'Candidate submitted successfully.')
       reset(defaultFormValues)
+
+      if (showRecords) {
+        await loadCandidateRecords()
+      } else {
+        setHasFetchedRecords(false)
+      }
     } catch {
       setSubmitError('Unable to connect to the server. Please try again.')
     } finally {
@@ -165,19 +215,45 @@ function CandidateForm() {
           </p>
         </div>
 
+        <div className="mb-6 flex justify-end">
+          <button
+            type="button"
+            onClick={handleToggleRecords}
+            aria-expanded={showRecords}
+            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm"
+          >
+            {showRecords ? 'Hide Submitted Records' : 'View Submitted Records'}
+          </button>
+        </div>
+
         <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-8">
           <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-8">
             {submitError ? (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <div
+                role="alert"
+                aria-live="polite"
+                className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+              >
                 {submitError}
               </div>
             ) : null}
 
             {submitMessage ? (
-              <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+              <div
+                role="status"
+                aria-live="polite"
+                className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700"
+              >
                 {submitMessage}
               </div>
             ) : null}
+
+            <p className="text-sm text-gray-500">
+              <span aria-hidden="true" className="text-red-600">
+                *
+              </span>{' '}
+              Required fields
+            </p>
 
             <section className="rounded-lg border border-gray-200 p-4 sm:p-5">
               <h2 className="text-lg font-semibold text-gray-900">
@@ -189,6 +265,7 @@ function CandidateForm() {
                   name="firstName"
                   placeholder="Enter first name"
                   register={register}
+                  required
                   error={errors.firstName?.message}
                 />
                 <FormInput
@@ -196,6 +273,7 @@ function CandidateForm() {
                   name="lastName"
                   placeholder="Enter last name"
                   register={register}
+                  required
                   error={errors.lastName?.message}
                 />
                 <FormInput
@@ -204,6 +282,7 @@ function CandidateForm() {
                   type="email"
                   placeholder="Enter email address"
                   register={register}
+                  required
                   error={errors.email?.message}
                 />
                 <FormInput
@@ -211,6 +290,7 @@ function CandidateForm() {
                   name="dateOfBirth"
                   type="date"
                   register={register}
+                  required
                   error={errors.dateOfBirth?.message}
                   max={getMaxBirthDate()}
                 />
@@ -231,6 +311,7 @@ function CandidateForm() {
                 title="Residential Address"
                 prefix="residentialAddress"
                 register={register}
+                required
                 errors={errors.residentialAddress}
               />
 
@@ -257,6 +338,7 @@ function CandidateForm() {
                 title="Permanent Address"
                 prefix="permanentAddress"
                 register={register}
+                required={!sameAsResidential}
                 errors={errors.permanentAddress}
                 disabled={sameAsResidential}
               />
@@ -273,6 +355,15 @@ function CandidateForm() {
             </div>
           </form>
         </div>
+
+        {showRecords ? (
+          <CandidateRecords
+            records={records}
+            loading={isLoadingRecords}
+            error={recordsError}
+            onRefresh={loadCandidateRecords}
+          />
+        ) : null}
       </div>
     </div>
   )

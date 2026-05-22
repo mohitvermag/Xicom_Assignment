@@ -226,8 +226,8 @@ const validateCandidateData = (candidateData) => {
     return 'Permanent address is required';
   }
 
-  if (!documents.length || documents.length < 1) {
-    return 'Minimum 1 document required';
+  if (!documents.length || documents.length < 2) {
+    return 'Minimum 2 documents required';
   }
 
   for (const document of documents) {

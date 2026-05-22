@@ -50,7 +50,7 @@ function DocumentUploadSection(props) {
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Documents</h2>
           <p className="mt-1 text-sm text-gray-600">
-            Add at least 1 document with the correct file type.
+            Add at least 2 documents with the correct file type.
           </p>
         </div>
         <button
@@ -64,15 +64,20 @@ function DocumentUploadSection(props) {
       </div>
 
       {documentsError ? (
-        <p className="mt-3 text-sm text-red-600">{documentsError}</p>
+        <p role="alert" className="mt-3 text-sm text-red-600">
+          {documentsError}
+        </p>
       ) : null}
 
       <div className="mt-5 space-y-4">
         {fields.map((field, index) => {
           const currentType = documents?.[index]?.fileType || 'image'
-          const canRemove = fields.length > 1
+          const canRemove = fields.length > 2
           const fileError = errors.documents?.[index]?.file?.message
           const fileNameError = errors.documents?.[index]?.fileName?.message
+          const fileNameErrorId = `documents.${index}.fileName-error`
+          const fileTypeErrorId = `documents.${index}.fileType-error`
+          const fileErrorId = `documents.${index}.file-error`
 
           return (
             <div
@@ -101,11 +106,19 @@ function DocumentUploadSection(props) {
                     className="text-sm font-medium text-gray-700"
                   >
                     File Name
+                    <span aria-hidden="true" className="text-red-600">
+                      {' '}
+                      *
+                    </span>
                   </label>
                   <input
                     id={`documents.${index}.fileName`}
                     type="text"
                     placeholder="Enter file name"
+                    required
+                    aria-required="true"
+                    aria-invalid={fileNameError ? 'true' : 'false'}
+                    aria-describedby={fileNameError ? fileNameErrorId : undefined}
                     className={`mt-2 w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 outline-none focus:ring-2 ${
                       fileNameError
                         ? 'border-red-500 focus:border-red-500 focus:ring-red-100'
@@ -114,7 +127,13 @@ function DocumentUploadSection(props) {
                     {...register(`documents.${index}.fileName`)}
                   />
                   {fileNameError ? (
-                    <p className="mt-1 text-sm text-red-600">{fileNameError}</p>
+                    <p
+                      id={fileNameErrorId}
+                      role="alert"
+                      className="mt-1 text-sm text-red-600"
+                    >
+                      {fileNameError}
+                    </p>
                   ) : null}
                 </div>
 
@@ -124,15 +143,38 @@ function DocumentUploadSection(props) {
                     className="text-sm font-medium text-gray-700"
                   >
                     File Type
+                    <span aria-hidden="true" className="text-red-600">
+                      {' '}
+                      *
+                    </span>
                   </label>
                   <select
                     id={`documents.${index}.fileType`}
+                    required
+                    aria-required="true"
+                    aria-invalid={
+                      errors.documents?.[index]?.fileType?.message ? 'true' : 'false'
+                    }
+                    aria-describedby={
+                      errors.documents?.[index]?.fileType?.message
+                        ? fileTypeErrorId
+                        : undefined
+                    }
                     className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
                     {...register(`documents.${index}.fileType`)}
                   >
                     <option value="image">Image</option>
                     <option value="pdf">PDF</option>
                   </select>
+                  {errors.documents?.[index]?.fileType?.message ? (
+                    <p
+                      id={fileTypeErrorId}
+                      role="alert"
+                      className="mt-1 text-sm text-red-600"
+                    >
+                      {errors.documents[index].fileType.message}
+                    </p>
+                  ) : null}
                 </div>
 
                 <div>
@@ -141,12 +183,20 @@ function DocumentUploadSection(props) {
                     className="text-sm font-medium text-gray-700"
                   >
                     File Upload
+                    <span aria-hidden="true" className="text-red-600">
+                      {' '}
+                      *
+                    </span>
                   </label>
                   <input
                     key={`${field.id}-${currentType}`}
                     id={`documents.${index}.file`}
                     type="file"
                     accept={getAcceptValue(currentType)}
+                    required
+                    aria-required="true"
+                    aria-invalid={fileError ? 'true' : 'false'}
+                    aria-describedby={fileError ? fileErrorId : undefined}
                     className={`mt-2 block w-full rounded-lg border bg-white px-3 py-2 text-sm text-gray-700 file:mr-3 file:rounded-md file:border-0 file:bg-gray-200 file:px-3 file:py-2 file:text-sm file:font-medium ${
                       fileError ? 'border-red-500' : 'border-gray-300'
                     }`}
@@ -156,7 +206,13 @@ function DocumentUploadSection(props) {
                     {getFileHelpText(currentType)}
                   </p>
                   {fileError ? (
-                    <p className="mt-1 text-sm text-red-600">{fileError}</p>
+                    <p
+                      id={fileErrorId}
+                      role="alert"
+                      className="mt-1 text-sm text-red-600"
+                    >
+                      {fileError}
+                    </p>
                   ) : null}
                 </div>
               </div>

@@ -20,6 +20,15 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
+  const validFieldName =
+    /^documents\.\d+\.file$/.test(file.fieldname) ||
+    /^documents\[\d+\]\[file\]$/.test(file.fieldname);
+
+  if (!validFieldName) {
+    cb(new Error('Invalid file field name'));
+    return;
+  }
+
   const allowedTypes = /jpg|jpeg|png|pdf/;
   const extension = path.extname(file.originalname).toLowerCase().replace('.', '');
   const mimeType = file.mimetype.toLowerCase();
@@ -40,6 +49,9 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage,
   fileFilter,
+  limits: {
+    files: 10,
+  },
 });
 
 const uploadDocuments = (req, res, next) => {

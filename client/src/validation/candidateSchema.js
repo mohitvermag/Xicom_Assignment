@@ -86,7 +86,7 @@ export const candidateSchema = z
     sameAsResidential: z.boolean(),
     residentialAddress: requiredAddressSchema,
     permanentAddress: optionalAddressSchema,
-    documents: z.array(documentSchema).min(1, 'Please add at least 1 document'),
+    documents: z.array(documentSchema).min(2, 'Please add at least 2 documents'),
   })
   .superRefine((value, ctx) => {
     const birthDate = new Date(value.dateOfBirth)

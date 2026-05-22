@@ -6,10 +6,12 @@ function FormInput(props) {
     placeholder,
     register,
     error,
+    required = false,
     disabled = false,
     ...rest
   } = props
 
+  const errorId = `${name}-error`
   let inputClassName =
     'mt-2 w-full rounded-lg border px-3 py-2.5 text-sm text-gray-900 outline-none focus:ring-2'
 
@@ -29,17 +31,31 @@ function FormInput(props) {
     <div>
       <label htmlFor={name} className="text-sm font-medium text-gray-700">
         {label}
+        {required ? (
+          <span aria-hidden="true" className="text-red-600">
+            {' '}
+            *
+          </span>
+        ) : null}
       </label>
       <input
         id={name}
         type={type}
         placeholder={placeholder}
+        required={required}
         disabled={disabled}
+        aria-required={required}
+        aria-invalid={error ? 'true' : 'false'}
+        aria-describedby={error ? errorId : undefined}
         className={inputClassName}
         {...register(name)}
         {...rest}
       />
-      {error ? <p className="mt-1 text-sm text-red-600">{error}</p> : null}
+      {error ? (
+        <p id={errorId} role="alert" className="mt-1 text-sm text-red-600">
+          {error}
+        </p>
+      ) : null}
     </div>
   )
 }

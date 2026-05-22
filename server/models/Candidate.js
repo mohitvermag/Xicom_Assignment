@@ -11,6 +11,7 @@ const documentSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      enum: ['image', 'pdf'],
     },
     fileUrl: {
       type: String,
@@ -27,13 +28,13 @@ const addressSchema = new mongoose.Schema(
   {
     street1: {
       type: String,
+      required: true,
       trim: true,
-      default: '',
     },
     street2: {
       type: String,
+      required: true,
       trim: true,
-      default: '',
     },
   },
   {
@@ -58,6 +59,7 @@ const candidateSchema = new mongoose.Schema(
       required: true,
       trim: true,
       lowercase: true,
+      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
     },
     dob: {
       type: Date,
@@ -78,6 +80,10 @@ const candidateSchema = new mongoose.Schema(
     documents: {
       type: [documentSchema],
       default: [],
+      validate: {
+        validator: (value) => value.length >= 2,
+        message: 'Minimum 2 documents required',
+      },
     },
   },
   {
