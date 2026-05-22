@@ -139,7 +139,7 @@ function CandidateForm() {
     setRecordsError('')
 
     try {
-      const response = await fetch('/api/candidates')
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/candidates`)
       const result = await response.json()
 
       if (!response.ok) {
@@ -173,7 +173,7 @@ function CandidateForm() {
     setSubmitError('')
 
     try {
-      const response = await fetch('/api/candidates', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/candidates`, {
         method: 'POST',
         body: buildCandidateFormData(data),
       })
