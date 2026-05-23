@@ -3,43 +3,13 @@ const Candidate = require('../models/Candidate');
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const getServerBaseUrl = (req) => {
-  if (process.env.SERVER_URL) {
-    return process.env.SERVER_URL.replace(/\/$/, '');
-  }
-
-  const forwardedProtocol = req.headers['x-forwarded-proto'];
-  const protocol = forwardedProtocol
-    ? forwardedProtocol.split(',')[0]
-    : req.protocol;
-
-  return `${protocol}://${req.get('host')}`;
-};
-
-const getAbsoluteFileUrl = (fileUrl, req) => {
-  if (!fileUrl) {
-    return '';
-  }
-
-  if (/^https?:\/\//i.test(fileUrl)) {
-    return fileUrl;
-  }
-
-  return `${getServerBaseUrl(req)}${fileUrl}`;
-};
-
-const formatCandidateResponse = (candidate, req) => {
+const formatCandidateResponse = (candidate) => {
   const candidateData =
     typeof candidate.toObject === 'function' ? candidate.toObject() : candidate;
 
   return {
     ...candidateData,
-    documents: Array.isArray(candidateData.documents)
-      ? candidateData.documents.map((document) => ({
-          ...document,
-          fileUrl: getAbsoluteFileUrl(document.fileUrl, req),
-        }))
-      : [],
+    documents: Array.isArray(candidateData.documents) ? candidateData.documents : [],
   };
 };
 
@@ -120,16 +90,8 @@ const getAddressValue = (body, key) => {
   }
 
   return {
-    street1:
-      body[`${key}.street1`] ||
-      body[`${key}[street1]`] ||
-      body[`${key}[0][street1]`] ||
-      '',
-    street2:
-      body[`${key}.street2`] ||
-      body[`${key}[street2]`] ||
-      body[`${key}[0][street2]`] ||
-      '',
+    street1: body[`${key}.street1`] || '',
+    street2: body[`${key}.street2`] || '',
   };
 };
 
@@ -147,23 +109,7 @@ const getDocumentIndex = (fieldName) => {
   return null;
 };
 
-const addDocumentValue = (documentMap, index, key, value) => {
-  if (index === null || Number.isNaN(index)) {
-    return;
-  }
-
-  if (!documentMap[index]) {
-    documentMap[index] = {};
-  }
-
-  documentMap[index][key] = value;
-};
-
 const getDocumentsFromBody = (body) => {
-  if (!body.documents) {
-    return [];
-  }
-
   if (Array.isArray(body.documents)) {
     return body.documents;
   }
@@ -181,48 +127,31 @@ const getDocumentsFromBody = (body) => {
 };
 
 const buildDocuments = (body, files) => {
-  const documentMap = {};
-  const documentsFromBody = getDocumentsFromBody(body);
-
-  documentsFromBody.forEach((document, index) => {
-    addDocumentValue(documentMap, index, 'fileName', document.fileName || '');
-    addDocumentValue(documentMap, index, 'fileType', document.fileType || '');
-  });
-
-  Object.keys(body).forEach((key) => {
-    const dotMatch = key.match(/^documents\.(\d+)\.(fileName|fileType)$/);
-    if (dotMatch) {
-      addDocumentValue(documentMap, Number(dotMatch[1]), dotMatch[2], body[key]);
-      return;
-    }
-
-    const bracketMatch = key.match(/^documents\[(\d+)\]\[(fileName|fileType)\]$/);
-    if (bracketMatch) {
-      addDocumentValue(documentMap, Number(bracketMatch[1]), bracketMatch[2], body[key]);
-    }
-  });
+  const documents = getDocumentsFromBody(body).map((document) => ({
+    fileName: document.fileName || '',
+    fileType: document.fileType || '',
+    fileUrl: '',
+    uploadedFile: null,
+  }));
 
   files.forEach((file, index) => {
     const documentIndex = getDocumentIndex(file.fieldname);
     const finalIndex = documentIndex !== null ? documentIndex : index;
 
-    if (!documentMap[finalIndex]) {
-      documentMap[finalIndex] = {};
+    if (!documents[finalIndex]) {
+      documents[finalIndex] = {
+        fileName: '',
+        fileType: '',
+        fileUrl: '',
+        uploadedFile: null,
+      };
     }
 
-    documentMap[finalIndex].uploadedFile = file;
+    documents[finalIndex].fileUrl = `/uploads/${file.filename}`;
+    documents[finalIndex].uploadedFile = file;
   });
 
-  return Object.keys(documentMap)
-    .sort((a, b) => Number(a) - Number(b))
-    .map((key) => ({
-      fileName: documentMap[key].fileName || '',
-      fileType: documentMap[key].fileType || '',
-      fileUrl: documentMap[key].uploadedFile
-        ? `/uploads/${documentMap[key].uploadedFile.filename}`
-        : '',
-      uploadedFile: documentMap[key].uploadedFile || null,
-    }));
+  return documents;
 };
 
 const validateCandidateData = (candidateData) => {
@@ -345,7 +274,7 @@ const createCandidate = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Candidate submitted successfully',
-      data: formatCandidateResponse(savedCandidate, req),
+      data: formatCandidateResponse(savedCandidate),
     });
   } catch (error) {
     removeUploadedFiles(uploadedFiles);
@@ -363,7 +292,7 @@ const getCandidates = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: 'Candidates fetched successfully',
-      data: candidates.map((candidate) => formatCandidateResponse(candidate, req)),
+      data: candidates.map((candidate) => formatCandidateResponse(candidate)),
     });
   } catch (error) {
     return res.status(500).json({

@@ -1,7 +1,8 @@
 {
-  "name": "client",
+  "name": "candidate-form-client",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Frontend for the candidate document submission form",
   "type": "module",
   "scripts": {
     "dev": "vite",
